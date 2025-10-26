@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  userType  String   @default("CUSTOMER") // CUSTOMER, RENTACAR_OWNER, ADMIN
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // RentACar Owner specific fields
+  companyName    String?
+  companyAddress String?
+  taxNumber     String?
+  isVerified    Boolean @default(false)
+
+  // Relations
+  cars          Car[]
+  reservations  Reservation[]
+  reviews       Review[]
+
+}
+
+model Car {
+  id          String   @id @default(cuid())
+  brand       String
+  model       String
+  year        Int
+  price       Int      // Daily price in TL
+  image       String
+  fuelType    String
+  transmission String
+  seats       Int
+  location    String
+  rating      Float    @default(0)
+  features    String  // JSON string
+  description String
+  availability Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  ownerId       String
+  owner         User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  reservations  Reservation[]
+  reviews       Review[]
+}
+
+model Reservation {
+  id        String   @id @default(cuid())
+  startDate DateTime
+  endDate   DateTime
+  totalPrice Int
+  status    String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED, COMPLETED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  carId  String
+  car    Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int      // 1-5 stars
+  comment   String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  carId  String
+  car    Car  @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, carId])
+}
